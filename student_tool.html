@@ -358,6 +358,25 @@
                 { border: 'rgb(54, 162, 235)', bg: 'rgba(54, 162, 235, 0.2)' }  // Blue
             ];
             
+            function initializeApiKeyFromHash() {
+                const hash = window.location.hash.substring(1); // 取得 # 後面的內容
+                const hashParams = new URLSearchParams(hash);
+                const keyFromHash = hashParams.get('apikey');
+
+                if (keyFromHash) {
+                    // 如果從 Hash 取得 Key，存入 sessionStorage (供後續會話使用)
+                    sessionStorage.setItem('geminiApiKey', keyFromHash);
+            
+                    // 清除 URL 中的 Hash 部分 (關鍵步驟)，避免 Key 長時間顯示
+                    // 使用 replaceState 避免觸發頁面重新載入
+                    window.history.replaceState(null, null, window.location.pathname + window.location.search);
+            
+                    return keyFromHash;
+                }
+                // 如果 Hash 中沒有，就從 sessionStorage 讀取（繼承會話）
+                return sessionStorage.getItem('geminiApiKey');
+            }
+
             const loadingOverlay = document.getElementById('loading-overlay');
             const loadingStatus = document.getElementById('loading-status');
 
@@ -388,16 +407,13 @@
                 conjunctions: params.get('conjunctions')?.split(',').filter(Boolean) || [],
                 rhetoric: params.get('rhetoric')?.split(',').filter(Boolean) || []
             };
-            const apiKey = sessionStorage.getItem('geminiApiKey') || ""; 
+            const apiKey = initializeApiKeyFromHash(); // 從 Hash 或 sessionStorage 獲取 Key
 
-            if (!apiKey && !config.title) {
-                document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">錯誤：缺少 API Key 或作文題目。請返回上一頁重新設定。</h1>';
-                return;
-            } else if (!apiKey) {
-                 document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">錯誤：缺少 API Key。請返回上一頁重新設定。</h1>';
+            if (!apiKey) {
+                document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少 API Key。請返回上一頁重新設定。</h1>';
                 return;
             } else if (!config.title) {
-                 document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">錯誤：缺少作文題目。請返回上一頁重新設定。</h1>';
+                document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少作文題目。請返回上一頁重新設定。</h1>';
                 return;
             }
 
@@ -779,7 +795,7 @@ ${JSON.stringify(jsonPromptSchema, null, 2)}
                     return;
                 }
                 
-                if (trimmedText.length < 5) {
+                if (trimmedText.length < 30) {
                     // 內容過短，不足以進行評量
                     feedbackElement.innerHTML = "<p style='color: #dc2626; font-weight: bold;'>⚠️ 老師提醒你：內容太短囉！請至少輸入 30 個字以上，才能開始進行批改喔！</p>";
                     return;
@@ -1572,8 +1588,7 @@ ${scoreComparisonTask}
                     document.getElementById('check4'),
                     document.getElementById('check5'),
                     document.getElementById('check6')
-                ];
-    
+                ];    
                 const allChecked = checks.every(checkbox => checkbox.checked);
 
                 if (!allChecked) {
@@ -1581,14 +1596,30 @@ ${scoreComparisonTask}
                     return; // 阻止繼續執行批改邏輯
                 }
                 
-                let fullText = "";
+                let studentInputText = "";
+                // 收集所有段落的內容並檢查是否有實質文字
                 for(let i = 1; i <= 4; i++) {
-                    fullText += `【第${i}段】\n` + document.getElementById(`paragraph-${i}-input`).value + "\n\n";
+                    studentInputText += document.getElementById(`paragraph-${i}-input`).value.trim();
+                }
+    
+                const trimmedFullText = studentInputText.trim();
+
+                // *** 關鍵修正 1: 檢查是否有實質文字內容 ***
+                if (trimmedFullText.length === 0) { 
+                    feedbackElement.innerHTML = "<p style='color: #dc2626; font-weight: bold;'>⚠️ 老師提醒你：寫作區沒有偵測到任何文字，請輸入內容後再批改喔！</p>";
+                    return;
+                }
+    
+                // (可選) 沿用舊的短內容檢查，建議至少 50 字才進行全文評分
+                if (trimmedFullText.length < 50) { 
+                    feedbackElement.innerHTML = "<p style='color: #dc2626; font-weight: bold;'>⚠️ 老師提醒你：全文內容總字數不足 50 字，無法進行專業批改，請繼續努力喔！</p>";
+                    return;
                 }
 
-                if (fullText.trim().length < 10) { // Check if there is substantial text
-                    feedbackElement.innerHTML = "請先完成所有段落的寫作再進行全文批改。";
-                    return;
+                // 重新格式化文章內容，包含段落標籤，傳給 API
+                let fullTextForApi = "";
+                for(let i = 1; i <= 4; i++) {
+                    fullTextForApi += `【第${i}段】\n` + document.getElementById(`paragraph-${i}-input`).value + "\n\n";
                 }
 
                 let previousScoresPromptSection = "";
@@ -1621,7 +1652,7 @@ ${scoreComparisonTask}
 
 ### 學生寫的完整文章:
 \`\`\`
-${fullText}
+${fullTextForApi}
 \`\`\`
 ${previousScoresPromptSection}
 

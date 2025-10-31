@@ -254,67 +254,59 @@
         </form>
     </div>
 
-<script>
+<script> 
     document.getElementById('configForm').addEventListener('submit', function(event) {
         event.preventDefault();
 
-        // 使用硬編碼的 API Key 並儲存到 sessionStorage
+         // 1. 設定 API Key (硬編碼部分不變)
         const apiKey = "AIzaSyDRYsGnQa2cOBt4a0zUo3fU0EJ5bVcvApA";
-        sessionStorage.setItem('geminiApiKey', apiKey); 
-
+        
         // 輔助函式：收集特定 name 屬性所有被勾選的值
         const getCheckedValues = (name) => {
             return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
         };
 
         const params = new URLSearchParams();
-        params.set('title', document.getElementById('title').value);
+        const titleValue = document.getElementById('title').value.trim();
+
+        if (!titleValue) {
+            alert('請務必填寫作文題目！');
+            document.getElementById('title').focus();
+            return;
+        }
+
+        // 收集所有基本參數
+        params.set('title', titleValue);
         params.set('level', document.getElementById('level').value);
         params.set('wordCount', document.getElementById('wordCount').value);
         params.set('style', document.getElementById('style').value);
         params.set('structure', document.getElementById('structure').value);
         
-        // --- 關鍵修正區：確保所有參數都以學生頁面期望的名稱傳輸 ---
+        // 收集所有進階指導參數
+        const dynamicCategories = [
+            'phrases_vocab', 'phrases_idioms', 'phrases_quotes', 
+            'phrases_personality', 'phrases_emotion', 'conjunctions', 'rhetoric'
+        ];
         
-        // 1. 建議詞彙類（5 個獨立參數）
-        const vocab = getCheckedValues('phrases_vocab');
-        if (vocab.length > 0) params.set('phrases_vocab', vocab.join(','));
-        
-        const idioms = getCheckedValues('phrases_idioms');
-        if (idioms.length > 0) params.set('phrases_idioms', idioms.join(','));
-        
-        const quotes = getCheckedValues('phrases_quotes');
-        if (quotes.length > 0) params.set('phrases_quotes', quotes.join(','));
-        
-        const personality = getCheckedValues('phrases_personality');
-        if (personality.length > 0) params.set('phrases_personality', personality.join(','));
-
-        const emotion = getCheckedValues('phrases_emotion');
-        if (emotion.length > 0) params.set('phrases_emotion', emotion.join(','));
-        
-        // 2. 建議句型（1 個參數，name="conjunctions"）
-        const conjunctions = getCheckedValues('conjunctions');
-        if (conjunctions.length > 0) params.set('conjunctions', conjunctions.join(','));
-
-        // 3. 建議修辭（1 個參數，name="rhetoric"）
-        const rhetoric = getCheckedValues('rhetoric');
-        if (rhetoric.length > 0) params.set('rhetoric', rhetoric.join(','));
+        dynamicCategories.forEach(name => {
+            const values = getCheckedValues(name);
+            if (values.length > 0) {
+                params.set(name, values.join(','));
+            }
+        });
 
         const generateExample = getCheckedValues('generate_example_essay');
         if (generateExample.includes('true')) {
-            // 只要勾選，就傳送參數 'generate_example_essay=true'
             params.set('generate_example_essay', 'true');
-        }      
+        }
 
-        // -----------------------------------------------------------
+        // *** 關鍵改變：將 API Key 編碼後放入 URL Hash (#) ***
+        const urlParams = params.toString();
+        // 使用 encodeURIComponent 確保 Key 中的特殊符號能正確傳輸
+        const hashKey = `#apikey=${encodeURIComponent(apiKey)}`;
 
-        if (!params.get('title')) {
-            alert('請務必填寫作文題目！');
-            return;
-        }        
-
-        // 將用戶導向作文引導單頁面
-        window.location.href = `student_tool.html?${params.toString()}`;
+        // 將用戶導向學生頁面，Key 放在 Hash 區
+        window.location.href = `student_tool.html?${urlParams}${hashKey}`;
     });
 </script>
 </body>
