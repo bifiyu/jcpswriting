@@ -407,7 +407,8 @@
                 conjunctions: params.get('conjunctions')?.split(',').filter(Boolean) || [],
                 rhetoric: params.get('rhetoric')?.split(',').filter(Boolean) || []
             };
-            const apiKey = initializeApiKeyFromHash(); // 從 Hash 或 sessionStorage 獲取 Key
+            //const apiKey = initializeApiKeyFromHash(); // 從 Hash 或 sessionStorage 獲取 Key
+            const apiKey = "AIzaSyDRYsGnQa2cOBt4a0zUo3fU0EJ5bVcvApA";
 
             if (!apiKey) {
                 document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少 API Key。請返回上一頁重新設定。</h1>';
@@ -1753,4 +1754,5 @@ ${scoreComparisonTask}
     </script>
 </body>
 </html>
+
 
