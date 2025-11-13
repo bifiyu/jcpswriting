@@ -256,27 +256,27 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-y-2 gap-x-4">
                                     <div class="flex items-center">
                                         <input id="check1" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                        <label for="check1" class="ml-3 block text-sm text-gray-900">每個段落都有完成了嗎?</label>
+                                        <label for="check1" class="ml-3 block text-sm text-gray-900">每個段落都有完成了嗎？</label>
                                     </div>
                                     <div class="flex items-center">
                                         <input id="check2" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                        <label for="check2" class="ml-3 block text-sm text-gray-900">標點符號有正確使用嗎?</label>
+                                        <label for="check2" class="ml-3 block text-sm text-gray-900">標點符號有正確使用嗎？</label>
                                     </div>
                                     <div class="flex items-center">
                                         <input id="check3" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                        <label for="check3" class="ml-3 block text-sm text-gray-900">國字注音有正確使用嗎?</label>
+                                        <label for="check3" class="ml-3 block text-sm text-gray-900">國字注音有正確使用嗎？</label>
                                     </div>
                                     <div class="flex items-center">
                                         <input id="check4" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                        <label for="check4" class="ml-3 block text-sm text-gray-900">建議詞彙有盡量使用嗎?</label>
+                                        <label for="check4" class="ml-3 block text-sm text-gray-900">建議詞彙有盡量使用嗎？</label>
                                     </div>
                                     <div class="flex items-center">
                                         <input id="check6" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                        <label for="check6" class="ml-3 block text-sm text-gray-900">建議修辭有盡量使用嗎?</label>
+                                        <label for="check6" class="ml-3 block text-sm text-gray-900">建議修辭有盡量使用嗎？</label>
                                     </div>
                                     <div class="flex items-center">
                                         <input id="check5" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                        <label for="check5" class="ml-3 block text-sm text-gray-900">建議句型有盡量使用嗎?</label>
+                                        <label for="check5" class="ml-3 block text-sm text-gray-900">建議句型有盡量使用嗎？</label>
                                     </div>                                    
                                 </div>
                             </div>
@@ -399,13 +399,13 @@
                 style: params.get('style') || "記敘文",
                 structure: params.get('structure') || "總分總",
                 // Read all treasure box items from URL params
-                phrases_vocab: params.get('phrases_vocab')?.split(',').filter(Boolean) || [],
-                phrases_idioms: params.get('phrases_idioms')?.split(',').filter(Boolean) || [],
-                phrases_quotes: params.get('phrases_quotes')?.split(',').filter(Boolean) || [],
-                phrases_personality: params.get('phrases_personality')?.split(',').filter(Boolean) || [],
-                phrases_emotion: params.get('phrases_emotion')?.split(',').filter(Boolean) || [],
-                conjunctions: params.get('conjunctions')?.split(',').filter(Boolean) || [],
-                rhetoric: params.get('rhetoric')?.split(',').filter(Boolean) || []
+                phrases_vocab: params.get('phrases_vocab')？.split(',').filter(Boolean) || [],
+                phrases_idioms: params.get('phrases_idioms')？.split(',').filter(Boolean) || [],
+                phrases_quotes: params.get('phrases_quotes')？.split(',').filter(Boolean) || [],
+                phrases_personality: params.get('phrases_personality')？.split(',').filter(Boolean) || [],
+                phrases_emotion: params.get('phrases_emotion')？.split(',').filter(Boolean) || [],
+                conjunctions: params.get('conjunctions')？.split(',').filter(Boolean) || [],
+                rhetoric: params.get('rhetoric')？.split(',').filter(Boolean) || []
             };
             //const apiKey = initializeApiKeyFromHash(); // 從 Hash 或 sessionStorage 獲取 Key
             const apiKey = "AIzaSyDRYsGnQa2cOBt4a0zUo3fU0EJ5bVcvApA";
@@ -437,7 +437,7 @@
                     }
                     const data = await response.json();
                     let text = data.candidates[0].content.parts[0].text;
-                    text = text.replace(/```json\n?|```html\n?|\n?```/g, '').trim();
+                    text = text.replace(/```json\n？|```html\n？|\n？```/g, '').trim();
                     if(elementToUpdate) {
                        elementToUpdate.innerHTML = text;
                     }
@@ -464,11 +464,11 @@
                 const guidanceContainer = document.getElementById('guidance-columns');
 
                 const guidanceMap = {
-                    phrases_vocab: { title: '語詞', options: treasureData?.phrases_vocab },
-                    phrases_idioms: { title: '成語', options: treasureData?.phrases_idioms },
-                    phrases_quotes: { title: '名言佳句', options: treasureData?.phrases_quotes },
-                    phrases_personality: { title: '性格卡', options: treasureData?.phrases_personality },
-                    phrases_emotion: { title: '情緒卡', options: treasureData?.phrases_emotion },
+                    phrases_vocab: { title: '語詞', options: treasureData？.phrases_vocab },
+                    phrases_idioms: { title: '成語', options: treasureData？.phrases_idioms },
+                    phrases_quotes: { title: '名言佳句', options: treasureData？.phrases_quotes },
+                    phrases_personality: { title: '性格卡', options: treasureData？.phrases_personality },
+                    phrases_emotion: { title: '情緒卡', options: treasureData？.phrases_emotion },
                     rhetoric: { title: '建議修辭', options: config.rhetoric }, // Use config data
                     conjunctions: { title: '建議句型', options: config.conjunctions } // Use config data
                 };
@@ -542,7 +542,7 @@
 
                             let itemsHTML = '<div class="space-y-4">';
                             item.options.forEach((option, index) => {
-                                const displayText = key === 'conjunctions' ? (conjunctionMap[option] || option) : option;
+                                const displayText = key === 'conjunctions' ？ (conjunctionMap[option] || option) : option;
                                 itemsHTML += `
                                     <div class="grid md:grid-cols-8 gap-4 items-center">
                                         <div class="md:col-span-1 text-gray-700 font-medium">${displayText}</div>
@@ -965,7 +965,7 @@ ${scoreComparisonTask}
                 
                 const chineseNumerals = ['一', '二', '三', '四'];
                 const titleText = (typeof id === 'string' && id.toLowerCase() === '全文')
-                    ? '全文寫作能力雷達圖'
+                    ？ '全文寫作能力雷達圖'
                     : `第 ${chineseNumerals[id - 1]} 段 寫作能力雷達圖`;
                 modalTitle.textContent = titleText;
 
@@ -1207,7 +1207,7 @@ ${scoreComparisonTask}
                 content += "========================================\n";
                 content += "【作文大綱】\n";
                 const outlineContent = document.getElementById('outline-content').innerText;
-                content += (outlineContent.trim() !== "點擊上方按鈕來生成寫作大綱。") ? outlineContent + "\n\n" : "尚未生成大綱。\n\n";
+                content += (outlineContent.trim() !== "點擊上方按鈕來生成寫作大綱。") ？ outlineContent + "\n\n" : "尚未生成大綱。\n\n";
                 
                 // 3. 各段寫作提示
                 content += "========================================\n";
@@ -1221,7 +1221,7 @@ ${scoreComparisonTask}
                         hasDetailedGuidance = true;
                     }
                 }
-                content += hasDetailedGuidance ? detailedGuidanceContent : "尚未生成各段引導提問。\n\n";
+                content += hasDetailedGuidance ？ detailedGuidanceContent : "尚未生成各段引導提問。\n\n";
 
 
                 // 4. 寫作百寶箱
@@ -1244,7 +1244,7 @@ ${scoreComparisonTask}
                         content += `--- ${item.title} ---\n`;
                         if (key === 'conjunctions' || key === 'rhetoric') {
                              item.options.forEach(option => {
-                                 const example = exampleSentencesData[key]?.[option] || "尚未生成範例";
+                                 const example = exampleSentencesData[key]？.[option] || "尚未生成範例";
                                  content += `${option}: ${example}\n`;
                              });
                              content += "\n";
@@ -1258,7 +1258,7 @@ ${scoreComparisonTask}
                 content += "========================================\n";
                 content += "【靈感範文】\n";
                 const fullCompContent = document.getElementById('full-composition-output').innerText;
-                content += (fullCompContent.trim() !== "") ? fullCompContent + "\n\n" : "尚未生成範文。\n\n";
+                content += (fullCompContent.trim() !== "") ？ fullCompContent + "\n\n" : "尚未生成範文。\n\n";
                 
                 
                 content += "========================================\n";
@@ -1545,7 +1545,7 @@ ${scoreComparisonTask}
                     if (button.classList.contains('button-secondary')) { //批改按鈕
                         const paragraphText = document.getElementById(`paragraph-${paragraphNum}-input`).value;
                         const guidanceElement = document.getElementById(`paragraph-${paragraphNum}-guidance`);
-                        const guidanceText = guidanceElement ? guidanceElement.innerText : "沒有提供大綱提示";
+                        const guidanceText = guidanceElement ？ guidanceElement.innerText : "沒有提供大綱提示";
                         evaluateParagraph(paragraphNum, paragraphText, guidanceText);
                     } else if (button.classList.contains('voice-input-btn')) { //語音輸入按鈕
                          handleVoiceInput(paragraphNum, button);
@@ -1754,5 +1754,6 @@ ${scoreComparisonTask}
     </script>
 </body>
 </html>
+
 
 
