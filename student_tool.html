@@ -408,7 +408,6 @@
                 rhetoric: params.get('rhetoric')?.split(',').filter(Boolean) || []
             };
             const apiKey = "AIzaSyCN60U04obCUR5hNTWneKs_hjx2m9wYmUo";
-            const apiKey = initializeApiKeyFromHash(); // 從 Hash 或 sessionStorage 獲取 Key
 
             if (!apiKey) {
                 document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少 API Key。請返回上一頁重新設定。</h1>';
@@ -1828,4 +1827,5 @@ ${scoreComparisonTask}
     </script>
 </body>
 </html>
+
 
