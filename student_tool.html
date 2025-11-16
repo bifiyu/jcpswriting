@@ -30,7 +30,7 @@
             font-weight: bold;
             padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
-            transition: background-color: 0.3s;
+            transition: background-color 0.3s;
         }
         .button-primary:hover {
             background-color: #4338ca;
@@ -147,11 +147,8 @@
                     <div class="bg-yellow-100 rounded-lg p-6">
                         <h2 class="text-xl font-bold mb-2">小作家你好：「有了作文大綱，寫作就有了方向！」</h2>
                         <p class="text-gray-600 mb-4">根據老師設定的文體和結構，提供作文大綱說明，一起來沉浸式寫作吧！</p>
-                        <div class="grid grid-cols-1 gap-4">
-                            <button id="generate-paragraph-btn" class="button-primary w-full">產生作文大綱</button>
-                        </div>
                         <div id="outline-content" class="output-box mt-4">
-                            點擊上方按鈕來生成寫作大綱。
+                            正在生成寫作大綱......
                         </div>
                     </div>
                 </div>
@@ -172,7 +169,6 @@
                             </div>
                             <span id="word-counter" class="text-gray-600 font-medium">總字數：0 / 0</span>
                         </div>
-                        <button id="populate-writing-area-btn" class="button-primary w-full my-4">產生各段作文大綱和引導提問</button>
                         <div id="writing-section" class="mt-4 space-y-4">
                             <!-- 四個段落的寫作區塊 -->
                             <div id="p1-block" class="card bg-white">
@@ -408,14 +404,15 @@
                 rhetoric: params.get('rhetoric')?.split(',').filter(Boolean) || []
             };
             const apiKey = "AIzaSyCN60U04obCUR5hNTWneKs_hjx2m9wYmUo";
+            //const apiKey = initializeApiKeyFromHash(); // 從 Hash 或 sessionStorage 獲取 Key
 
-            if (!apiKey) {
-                document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少 API Key。請返回上一頁重新設定。</h1>';
-                return;
-            } else if (!config.title) {
-                document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少作文題目。請返回上一頁重新設定。</h1>';
-                return;
-            }
+            //if (!apiKey) {
+                //document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少 API Key。請返回上一頁重新設定。</h1>';
+                //return;
+            //} else if (!config.title) {
+                //document.body.innerHTML = '<h1 class="text-red-500 text-center text-xl p-8">❌ 錯誤：缺少作文題目。請返回上一頁重新設定。</h1>';
+                //return;
+            //}
 
             // --- 2. SETUP THE GEMINI API CALL FUNCTION ---
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
@@ -563,10 +560,7 @@
                             };
 
                             let headerHTML = `
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="font-bold text-lg">${item.title}</h3>
-                                    <button class="button-generate !w-auto !mt-0 flex-shrink-0" data-type="${key}">生成所有範例</button>
-                                </div>
+                                    <h3 class="font-bold text-lg mb-4">${item.title}</h3>
                             `;
 
                             let itemsHTML = '<div class="space-y-4">';
@@ -1077,26 +1071,75 @@ ${scoreComparisonTask}
 
                 modal.classList.remove('hidden');
             }
+            
+            function buildConjunctionUsageHint(conjunctionList) {
+                if (!Array.isArray(conjunctionList) || conjunctionList.length === 0) {
+                    return '';
+                }
 
+                const lines = conjunctionList.map(c => {
+                    if (c === '如果就') {
+                        return '・「如果就」代表「如果……，就……」，請寫成這種結構，例如：「如果我忘記帶作業，就會被老師提醒。」不能寫成「如果就像……」。';
+                    }
+                    if (c === '不是就是') {
+                        return '・「不是就是」代表「不是……，就是……」，請寫成這種結構，例如：「放學後，我不是去圖書館，就是去操場。」不能寫成「我們的關係不是就是……」。';
+                    }
+                    // 其他沒特別指定的關聯詞，給一個通用說明
+                    return `・「${c}」是關聯詞句型，請用你平常教國小學生的正確用法來寫，不能把整串字黏在一起當一個詞。`;
+                });
+
+                return `
+            ### 關聯詞句型使用規則（很重要）：
+            ${lines.join('\n')}
+            - 每一句話「最多」只用一種關聯詞句型。
+            - 使用關聯詞時，一定要寫出前後兩個子句（例如：「如果……，就……」），不可以只出現一半。
+            - 絕對不要出現「如果就像……」或「不是就是一起……」這種寫法。`;
+            }   
 
             async function generateFullComposition() {
+                // 1. 從「寫作百寶箱」實際生成的詞彙收集可用字詞
                 let allSuggestions = [];
-                if (config.phrases_vocab && config.phrases_vocab.length > 0) allSuggestions.push(...config.phrases_vocab);
-                if (config.phrases_idioms && config.phrases_idioms.length > 0) allSuggestions.push(...config.phrases_idioms);
-                if (config.phrases_quotes && config.phrases_quotes.length > 0) allSuggestions.push(...config.phrases_quotes);
-                if (config.phrases_personality && config.phrases_personality.length > 0) allSuggestions.push(...config.phrases_personality); // Added
-                if (config.phrases_emotion && config.phrases_emotion.length > 0) allSuggestions.push(...config.phrases_emotion); // Added
-                if (config.conjunctions && config.conjunctions.length > 0) allSuggestions.push(...config.conjunctions); // Use conjunctions
-                if (config.rhetoric && config.rhetoric.length > 0) allSuggestions.push(...config.rhetoric);
+                const addFrom = (arr) => {
+                    if (Array.isArray(arr) && arr.length > 0) {
+                        allSuggestions.push(...arr);
+                    }
+                };
 
+                // guidanceWordsData 是前面 generateTreasureBoxContent() 存進來的
+                addFrom(guidanceWordsData.phrases_vocab);
+                addFrom(guidanceWordsData.phrases_idioms);
+                addFrom(guidanceWordsData.phrases_quotes);
+                addFrom(guidanceWordsData.phrases_personality);
+                addFrom(guidanceWordsData.phrases_emotion);
+
+                // 2. 關聯詞（建議句型）：另外存一份，等一下在 prompt 裡特別交代用法
+                let conjunctionList = Array.isArray(config.conjunctions) ? [...config.conjunctions] : [];
+
+                // 可選：如果關聯詞很多，可以先壓到最多 6 個，避免模型覺得全部都要硬塞進去
+                const MAX_CONJ = 6;
+                if (conjunctionList.length > MAX_CONJ) {
+                    conjunctionList = conjunctionList.slice(0, MAX_CONJ);
+                }
+
+                // 不再把「建議修辭種類」(config.rhetoric) 丟進來，避免「譬喻、排比」這種類別名出現在範文
+                // 3. 去除重複與空值
+                allSuggestions = Array.from(new Set(allSuggestions.filter(Boolean)));
+
+                const targetWordCount = parseInt(config.wordCount.match(/\d+/)[0], 10) || 400;
+
+                // 4. 產生關聯詞用法提示，塞進 prompt
+                const conjunctionUsageHint = buildConjunctionUsageHint(conjunctionList);
+                
                 const prompt = `你是一位優秀的作家，請為一位台灣的${config.level}學生，根據以下所有要求，寫一篇流暢且完整的作文。
 
 ### 作文要求:
 - **作文題目**: "${config.title}"
-- **字數要求**: 接近 ${config.wordCount.match(/\d+/)[0]} 字，但不要超過。
+- **字數要求**: 接近 ${targetWordCount}字，但不要超過。
 - **文體**: ${config.style}
 - **結構**: ${config.structure}
-- **融入詞彙**: 請在文章中盡量融入以下的建議詞語、成語或句型: ${allSuggestions.join('、')}
+- **融入詞彙**: 請在文章中盡量、但自然地融入以下的詞語、成語：${allSuggestions.join('、')}
+
+${conjunctionUsageHint}
 
 ### 輸出規則:
 1.  **格式**:
@@ -1549,6 +1592,12 @@ ${scoreComparisonTask}
                 guidanceWordsData = await generateTreasureBoxContent(); // Call AI for treasure box
                 buildPage(guidanceWordsData); // Build page with AI data and config data
                 hideLoading();
+                await populateWritingAreaWithOutline();
+
+                const outlineElement = document.getElementById('outline-content');
+                if (outlineElement) {
+                    generateParagraphStarters(outlineElement);
+                }
 
                 // 根據教師設定，隱藏或顯示「產生範文」區塊
                 if (params.get('generate_example_essay') !== 'true') {
@@ -1559,20 +1608,8 @@ ${scoreComparisonTask}
                     }
                 }
 
-                document.getElementById('generate-paragraph-btn').addEventListener('click', () => {
-                    generateParagraphStarters(document.getElementById('outline-content'));
-                });
-                document.getElementById('populate-writing-area-btn').addEventListener('click', populateWritingAreaWithOutline);
                 document.getElementById('download-guidance-btn').addEventListener('click', downloadGuidanceFile);
                 document.getElementById('download-history-btn').addEventListener('click', downloadHistoryFile);
-
-
-                document.getElementById('guidance-columns').addEventListener('click', (e) => {
-                    const button = e.target.closest('.button-generate');
-                    if (button && button.dataset.type) {
-                         generateExamples(button.dataset.type);
-                    }
-                });
 
                 document.getElementById('generate-full-comp-btn').addEventListener('click', generateFullComposition);
                 
@@ -1827,5 +1864,4 @@ ${scoreComparisonTask}
     </script>
 </body>
 </html>
-
 
