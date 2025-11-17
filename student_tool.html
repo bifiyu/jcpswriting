@@ -589,73 +589,128 @@
             
             // --- 4. DEFINE API PROMPTS AND TRIGGER FUNCTIONS ---
 
+            function safeParseTreasureJson(rawText) {
+                if (!rawText) return null;
+
+                try {
+                    // 先直接 parse 一次
+                    return JSON.parse(rawText);
+                } catch (e1) {
+                    // 如果前後有多餘文字，嘗試抓第一個 { 到最後一個 } 之間
+                    const start = rawText.indexOf('{');
+                    const end = rawText.lastIndexOf('}');
+                    if (start !== -1 && end !== -1 && end > start) {
+                        const possibleJson = rawText.slice(start, end + 1);
+                        try {
+                            return JSON.parse(possibleJson);
+                        } catch (e2) {
+                            console.error("Treasure JSON secondary parse failed:", e2);
+                        }
+                    }
+                    console.error("Treasure JSON parse failed. Raw response:", rawText);
+                    return null;
+                }
+            }
+
             async function generateTreasureBoxContent() {
                 showLoading('正在生成寫作百寶箱...');
                 
-                // 1. Check which dynamic categories are enabled from the URL config
                 const requestedCategories = [];
                 const jsonPromptSchema = {};
 
                 if (config.phrases_vocab.length > 0) {
-                    requestedCategories.push("語詞");
-                    jsonPromptSchema.phrases_vocab = ["語詞一", "...", "語詞十"];
+                    requestedCategories.push("phrases_vocab");
+                    jsonPromptSchema.phrases_vocab = ["語詞一", "語詞二", "語詞三", "語詞四", "語詞五", "語詞六", "語詞七", "語詞八"];
                 }
                 if (config.phrases_idioms.length > 0) {
-                    requestedCategories.push("成語");
-                    jsonPromptSchema.phrases_idioms = ["成語一", "...", "成語十"];
+                    requestedCategories.push("phrases_idioms");
+                    jsonPromptSchema.phrases_idioms = ["成語一", "成語二", "成語三", "成語四", "成語五", "成語六", "成語七", "成語八"];
                 }
                 if (config.phrases_quotes.length > 0) {
-                    requestedCategories.push("名言佳句");
-                    jsonPromptSchema.phrases_quotes = ["名言佳句一", "...", "名言佳句十"];
+                    requestedCategories.push("phrases_quotes");
+                    jsonPromptSchema.phrases_quotes = ["名言佳句一", "名言佳句二", "名言佳句三", "名言佳句四", "名言佳句五", "名言佳句六", "名言佳句七", "名言佳句八"];
                 }
                 if (config.phrases_personality.length > 0) {
-                    requestedCategories.push("性格卡");
-                    jsonPromptSchema.phrases_personality = ["性格卡一", "...", "性格卡十"];
+                    requestedCategories.push("phrases_personality");
+                    jsonPromptSchema.phrases_personality = ["性格詞一", "性格詞二", "性格詞三", "性格詞四", "性格詞五", "性格詞六", "性格詞七", "性格詞八"];
                 }
                 if (config.phrases_emotion.length > 0) {
-                    requestedCategories.push("情緒卡");
-                    jsonPromptSchema.phrases_emotion = ["情緒卡一", "...", "情緒卡十"];
+                    requestedCategories.push("phrases_emotion");
+                    jsonPromptSchema.phrases_emotion = ["情緒詞一", "情緒詞二", "情緒詞三", "情緒詞四", "情緒詞五", "情緒詞六", "情緒詞七", "情緒詞八"];
                 }
 
                 if (requestedCategories.length === 0) {
                     hideLoading();
-                    return {}; // No dynamic content requested
+                    return {};
                 }
 
-                // 2. Build the prompt
                 const prompt = `你是一位臺灣國小作文老師。請根據以下作文題目，為學生推薦適合的詞彙。
+
 - 作文題目: "${config.title}"
+- 學生年級: ${config.level}
+- 文體: ${config.style}
+- 結構: ${config.structure}
 
-請為以下**每一個**要求的類別，各產生 10 個項目：
-${requestedCategories.map(c => `- ${c}`).join('\n')}
+請依照下面的 JSON 模板，幫我把陣列裡的佔位文字（例如「語詞一」、「成語一」）全部換成真實的詞語。 
+**key 名稱一定要完全一樣，不能改成其他字，不能加新的 key，也不要刪掉既有的 key。**
+**請只回傳 JSON，不要加任何解釋文字或標題。**
 
-請嚴格依照以下的 JSON 格式輸出，只包含你被要求的類別。
+模板範例（請保留 key，但改掉陣列內容）：
 ${JSON.stringify(jsonPromptSchema, null, 2)}
 `;
-                // 3. Call API
-                try {
-                    const jsonText = await callGemini(prompt, null); // No skeleton loader here
-                    if (jsonText) {
-                        return JSON.parse(jsonText);
-                    }
-                    return {};
-                } catch (error) {
-                    console.error("Failed to generate treasure box content:", error);
-                    return {};
-                } finally {
-                    hideLoading();
-                }
+
+    try {
+        const rawText = await callGemini(prompt, null); // 不直接更新畫面
+        const parsed = safeParseTreasureJson(rawText);
+
+        if (!parsed) {
+            console.error("Treasure box: parsed result is null");
+            return {};
+        }
+
+        // 保險起見，只取我們認得的 key
+        const result = {};
+        for (const key of Object.keys(jsonPromptSchema)) {
+            if (Array.isArray(parsed[key])) {
+                // 過濾掉空字串、去重
+                result[key] = Array.from(new Set(parsed[key].map(s => String(s).trim()).filter(Boolean)));
             }
-            
+        }
+        return result;
+    } catch (error) {
+        console.error("Failed to generate treasure box content:", error);
+        return {};
+    } finally {
+        hideLoading();
+    }
+}            
             async function generateParagraphStarters(targetElement) {
                 const prompt = `你是一位臺灣國小作文老師。請根據以下設定，分四段簡單說明作文結構。
 - 作文題目: "${config.title}"
 - 學生年級: ${config.level}
 - 作文結構: ${config.structure}
 - 文體: ${config.style}
-請分四段簡單說明作文結構。重要：段落和段落之間只要空一行就好，請**不要**加入任何分隔線（例如 ---）或數字編號。`;
-                await callGemini(prompt, targetElement);
-            }
+請分四段簡單說明作文結構。重要：
+1. 段落和段落之間只要空一行就好，請不要加入任何分隔線（例如 ---）或數字編號。
+2. 不用自己加段首空格，我會在系統裡自動幫你把每一段開頭加上兩個全形空格。`;
+
+    // 不直接把結果丟進 element，而是先拿文字回來做後處理
+    const text = await callGemini(prompt, null);
+    if (!text) {
+        targetElement.innerHTML = '<p style="color:red;">大綱生成失敗，請稍後再試。</p>';
+        return;
+    }
+
+    // 將文本依「空行」切成段落，並為每個非空段落前面加上兩個全形空格
+    const paragraphs = text.split(/\n{2,}/).map(p => p.trim());
+    const INDENT = '　　'; // 兩個全形空格你也可以寫成 '　　'
+    const indented = paragraphs
+        .map(p => p ? INDENT + p : '')
+        .join('\n\n');
+
+    // outline-content 有 white-space: pre-line，所以用 textContent 就可以保留換行＋空格
+    targetElement.textContent = indented;
+}
             
             const detailedOutlinePrompt = `你是一位臺灣國小作文老師。請根據以下設定，為一篇四段式作文產生一份詳細的寫作大綱。
 - 作文題目: "${config.title}"
@@ -715,7 +770,14 @@ ${JSON.stringify(jsonPromptSchema, null, 2)}
                                         questionsHTML = `<ul class="list-decimal list-inside mt-2 pl-2">${paragraph.questions.map(q => `<li>${q}</li>`).join('')}</ul>`;
                                     }
                                     // 替換掉 Loading 效果
-                                    guidanceDiv.innerHTML = `<div class="paragraph-guidance"><h4>${paragraphPrefixes[index]}：${paragraph.title}</h4><p>${paragraph.explanation}</p>${questionsHTML}</div>`;
+                                    const INDENT = '　　';
+                                    const explanationText = (paragraph.explanation || '').trim();
+                                    guidanceDiv.innerHTML = `
+                                        <div class="paragraph-guidance">
+                                            <h4>${paragraphPrefixes[index]}：${paragraph.title}</h4>
+                                            <p>${INDENT}${explanationText}</p>
+                                            ${questionsHTML}
+                                        </div>`;
                                 }
                             });
                             updateWordCount();
@@ -811,6 +873,9 @@ ${JSON.stringify(jsonPromptSchema, null, 2)}
             async function evaluateParagraph(paragraphNum, paragraphText, guidanceText) {
                 const feedbackElement = document.getElementById(`paragraph-${paragraphNum}-feedback`);
                 const trimmedText = paragraphText.trim();
+
+                // ⚠️ 在送出前統一整理段首空兩格
+                const normalizedText = normalizeParagraphIndent(paragraphText);
                 
                 // --- 調整重點：增加對內容長度的檢查 ---
                 if (!trimmedText) {
@@ -870,7 +935,7 @@ ${guidanceText}
 
 ### 學生寫的段落內容:
 \`\`\`
-${paragraphText}
+${normalizedText}
 \`\`\`
 ${previousScoresPromptSection}
 ### 你的任務:
@@ -1381,6 +1446,50 @@ ${conjunctionUsageHint}
                 }
             }
 
+            // --- normalize paragraph indent (make every line start with 2 full-width spaces) ---
+            function normalizeParagraphIndent(text) {
+                const INDENT = '　　'; // two full-width spaces
+                return text
+                    .split('\n')
+                    .map(line => {
+                        // 移除行首所有空白 & 全形空白
+                        const trimmed = line.replace(/^[\s　]+/, '');
+                        // 空行不處理
+                        if (!trimmed) return '';
+                        // 加上標準的兩格全形空格
+                        return INDENT + trimmed;
+                    })
+                    .join('\n');
+            }
+
+            const INDENT = '　　'; // 兩個全形空格
+
+            // 讓每個寫作 textarea：第一次點進去時，如果是空白，就先放上兩格全形空格
+            textareas.forEach(textarea => {
+                textarea.addEventListener('focus', () => {
+                    if (!textarea.value.trim()) {
+                        textarea.value = INDENT;
+                        const len = textarea.value.length;
+                        textarea.setSelectionRange(len, len); // 游標移到行尾
+                    }
+                });
+
+                // 按 Enter 時，自動在新行開頭加兩格全形空格
+                textarea.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const { selectionStart, selectionEnd, value } = textarea;
+                        const before = value.slice(0, selectionStart);
+                        const after = value.slice(selectionEnd);
+                        const insert = '\n' + INDENT;
+                        textarea.value = before + insert + after;
+                        const newPos = before.length + insert.length;
+                        textarea.setSelectionRange(newPos, newPos);
+                        updateWordCount();
+                    }
+                });
+            });
+
             function handleVoiceInput(paragraphNum, button) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) {
@@ -1730,7 +1839,9 @@ ${conjunctionUsageHint}
                 // 重新格式化文章內容，包含段落標籤，傳給 API
                 let fullTextForApi = "";
                 for(let i = 1; i <= 4; i++) {
-                    fullTextForApi += `【第${i}段】\n` + document.getElementById(`paragraph-${i}-input`).value + "\n\n";
+                    const original = document.getElementById(`paragraph-${i}-input`).value;
+                    const normalized = normalizeParagraphIndent(original);
+                    fullTextForApi += `【第${i}段】\n` + normalized + "\n\n";
                 }
 
                 let previousScoresPromptSection = "";
@@ -1864,5 +1975,4 @@ ${scoreComparisonTask}
     </script>
 </body>
 </html>
-
 
