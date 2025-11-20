@@ -1237,6 +1237,12 @@ ${conjunctionUsageHint}
             }
 
             function downloadHistoryFile() {
+                function fixNewlinesForTxt(text) {
+                    return text
+                        .replace(/\r\n/g, '\n') 
+                        .replace(/\n/g, '\r\n'); // Windows Notepad 需要 CRLF
+                }
+
                 const seatNumberInput = document.getElementById('seat-number-input');
                 const seatNumber = seatNumberInput.value.trim();
 
@@ -1294,7 +1300,7 @@ ${conjunctionUsageHint}
                 } else {
                     fullEssayHistory.forEach((entry, index) => {
                         content += `--- 第 ${index + 1} 次全文批改 ---\n\n`;
-                        content += "【學生內文】:\n" + entry.text + "\n\n";
+                        content += "【學生內文】:\n" + fixNewlinesForTxt(entry.text) + "\n\n";
                         content += "【老師批改】:\n" + cleanFeedbackForTxt(entry.feedback) + "\n\n";
                     });
                 }
@@ -1844,6 +1850,21 @@ ${conjunctionUsageHint}
                     fullTextForApi += `【第${i}段】\n` + normalized + "\n\n";
                 }
 
+                // 額外為「寫作歷程下載」準備一份好閱讀、每段開頭空兩格的學生全文
+                const chineseNumeralsForHistory = ['一', '二', '三', '四'];
+                let historyStudentText = "";
+                for (let i = 1; i <= 4; i++) {
+                    const original = document.getElementById(`paragraph-${i}-input`).value;
+                    const normalized = normalizeParagraphIndent(original);  // 每行開頭兩個全形空格
+                    // 段落標題不要空兩格
+                    const label = `第${chineseNumeralsForHistory[i - 1]}段：`;
+                    // 這裡可以用 trimmed 來判斷有沒有內容，但不要動 normalized 本身
+                    const hasContent = normalized.replace(/[\s　]/g, '') !== "";
+                    const content = hasContent ? normalized : "　　(本段尚未填寫)";
+                    // 組合進歷程文字
+                    historyStudentText += label + "\n" + content + "\n\n";
+                }
+
                 let previousScoresPromptSection = "";
                 let scoreComparisonTask = "";
                 let tableHeader = `<th scope="col" class="px-4 py-2 whitespace-nowrap">級分 / 分數</th>`;
@@ -1953,7 +1974,7 @@ ${scoreComparisonTask}
                             feedbackElement.innerHTML = cleanedText;
                             
                             // 儲存全文批改歷程
-                            fullEssayHistory.push({ text: fullText, feedback: cleanedText });
+                            fullEssayHistory.push({ text: historyStudentText, feedback: cleanedText });
                             
                             displayRadarChart(newScores, '全文');
 
@@ -1964,7 +1985,7 @@ ${scoreComparisonTask}
                     } else {
                          feedbackElement.innerHTML = responseText;
                          // 儲存沒有分數的歷程
-                         fullEssayHistory.push({ text: fullText, feedback: responseText });
+                         fullEssayHistory.push({ text: historyStudentText, feedback: responseText });
                     }
                 }
             }
